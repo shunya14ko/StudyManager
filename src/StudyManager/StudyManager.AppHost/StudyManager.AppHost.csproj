@@ -13,7 +13,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\TimeManager\TimeManager.csproj" />
     <ProjectReference Include="..\StudyManager.ApiService\StudyManager.ApiService.csproj" />
-    <ProjectReference Include="..\StudyManager.Web\StudyManager.Web.csproj" />
   </ItemGroup>
 
   <ItemGroup>
