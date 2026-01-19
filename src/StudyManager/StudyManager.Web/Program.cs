@@ -1,5 +1,6 @@
 using StudyManager.Web;
 using StudyManager.Web.Components;
+using StudyManager.ServiceDefaults;
 
 var builder = WebApplication.CreateBuilder(args);
 

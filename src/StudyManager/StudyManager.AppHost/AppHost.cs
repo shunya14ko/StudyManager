@@ -9,6 +9,6 @@ builder.AddProject<Projects.StudyManager_Web>("webfrontend")
     .WithReference(apiService)
     .WaitFor(apiService);
 
-builder.AddProject<Projects.TimeManager>("timemanager");
+builder.AddProject<Projects.TimeManager>("timemanager").WithReference(apiService);
 
 builder.Build().Run();

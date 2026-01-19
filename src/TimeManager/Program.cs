@@ -1,4 +1,5 @@
 using TimeManager.Components;
+using StudyManager.ServiceDefaults;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,6 +8,9 @@ builder.AddServiceDefaults();
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+builder.Services.AddServiceDiscovery();
+#warning ToDo(¬—Ñ) // HttpClient‚Ìİ’è‚ğ’Ç‰Á
 
 var app = builder.Build();
 
