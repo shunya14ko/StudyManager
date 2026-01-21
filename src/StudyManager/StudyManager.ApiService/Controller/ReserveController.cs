@@ -1,10 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using Microsoft.AspNetCore.Mvc;
 
-namespace StudyManager.AppHost.Controller;
+namespace StudyManager.ApiService.Controller;
 
-internal class ReserveController
+[Route("api/v1/[controller]")]
+[ApiController]
+public class ReserveController : ControllerBase
 {
-#warning ToDo(小林) // MVCコントローラを追加→Swaggerの勉強も
+    // MVCにてHTTP GETリクエストを処理するサンプルメソッド
+    [HttpGet]
+    public IActionResult GetStatus()
+    {
+        return new JsonResult(new { status = "OK", timestamp = DateTime.UtcNow });
+    }
+
+    // [HttpPut]
+#warning ToDo // 実際にModelにぶち込むような処理を追加する
 }

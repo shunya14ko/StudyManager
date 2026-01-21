@@ -1,0 +1,44 @@
+﻿@page "/publisher"
+@inject IConfiguration Configuration
+@rendermode InteractiveServer
+
+<h3>Publisher</h3>
+@* Fulent UIを触ってみる *@
+
+<button class="btn btn-primary" @onclick="Pablish" >Primary Button</button>
+
+<div>
+    <table>@status</table>
+</div>
+<div>
+    <table>@timeInfo</table>
+</div>
+
+@code {
+
+    private async Task Pablish()
+    {
+        var uriForAppSettingJson = Configuration.GetValue<string>("Api:Handler");
+        using var client = new HttpClient();
+        var url = $"{uriForAppSettingJson}/reserve";
+        var response = await client.GetAsync(url);
+        if (response.StatusCode == System.Net.HttpStatusCode.OK)
+        {
+            status = "Success";
+            timeInfo = DateTime.Now;
+        }
+        else
+        {
+            status = $"Failed: {response.StatusCode}";
+            timeInfo = DateTime.Now;
+        }
+    }
+
+    private string status { get; set; } = string.Empty;
+    private DateTime timeInfo { get; set; } = DateTime.MinValue;
+
+    public class viewModels
+    {
+        // 汎用的にする場合のみ
+    }
+}
