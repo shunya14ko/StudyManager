@@ -10,7 +10,9 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddServiceDiscovery();
+
 #warning ToDo(¬—Ñ) // HttpClient‚Ìİ’è‚ğ’Ç‰Á
+#warning ToDo(¬—Ñ) // FuluentUI‚Ìİ’è‚ğ’Ç‰Á
 
 var app = builder.Build();
 

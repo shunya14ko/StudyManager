@@ -1,44 +1,71 @@
 ﻿@page "/publisher"
+@using Microsoft.Extensions.Hosting
 @inject IConfiguration Configuration
 @rendermode InteractiveServer
 
 <h3>Publisher</h3>
-@* Fulent UIを触ってみる *@
+@* Fluent UIを触ってみる UIのコンポーネントで値を入力してPutするまでの実現をする *@
 
-<button class="btn btn-primary" @onclick="Pablish" >Primary Button</button>
+<button class="btn btn-primary" @onclick="Publish">Primary Button</button>
 
-<div>
-    <table>@status</table>
-</div>
-<div>
-    <table>@timeInfo</table>
-</div>
+<list>
+    <table>
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Name</th>
+                <th>TimeInfo</th>
+            </tr>
+        </thead>
+    </table>
+</list>
+<div>@putResult</div>
 
 @code {
+    // スネークケースは、基本的にreadonlyプロパティにする
+    private List<ViewModels?> viewModels { get; set; } = new List<ViewModels?>();
+    private string putResult { get; set; } = string.Empty;
 
-    private async Task Pablish()
+    private async Task Publish()
     {
-        var uriForAppSettingJson = Configuration.GetValue<string>("Api:Handler");
+        var settingUri = Configuration.GetValue<ViewModels>("Api:Handler");
         using var client = new HttpClient();
-        var url = $"{uriForAppSettingJson}/reserve";
-        var response = await client.GetAsync(url);
-        if (response.StatusCode == System.Net.HttpStatusCode.OK)
+        try
         {
-            status = "Success";
-            timeInfo = DateTime.Now;
+            var eventModel = new ViewModels
+            {
+                id = Guid.NewGuid().ToString(),
+                Name = "TestName",
+                timeInfo = DateTime.Now,
+            };
+
+            client.Timeout = TimeSpan.FromSeconds(5);
+            var url = $"{settingUri}/reserve";
+            var response = await client.PutAsJsonAsync(url, eventModel);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
+            {
+                putResult = "Put成功";
+            }
+            else
+            {
+                putResult = "Put失敗";
+            }
         }
-        else
+        // 本当はExceptionでうけないでもっと下の例外クラスで受ける必要がある。
+        catch (Exception ex)
         {
-            status = $"Failed: {response.StatusCode}";
-            timeInfo = DateTime.Now;
+            putResult = "Put失敗";
+            Console.WriteLine(ex.Message);
+            //toast.service.ShowError("取得に失敗しました");
         }
     }
 
-    private string status { get; set; } = string.Empty;
-    private DateTime timeInfo { get; set; } = DateTime.MinValue;
-
-    public class viewModels
+    public class ViewModels
     {
         // 汎用的にする場合のみ
+        public string id { get; set; } = Guid.NewGuid().ToString();
+        public string Name { get; set; } = string.Empty;
+        public DateTime timeInfo { get; set; } = DateTime.MinValue;
     }
 }
