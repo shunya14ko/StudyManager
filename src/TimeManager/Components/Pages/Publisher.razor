@@ -8,27 +8,28 @@
 
 <button class="btn btn-primary" @onclick="Publish">Primary Button</button>
 
-<list>
-    <table>
-        <thead>
+<table class="table">
+    <tbody>
+        @foreach (var item in viewModels)
+        {
             <tr>
-                <th>Id</th>
-                <th>Name</th>
-                <th>TimeInfo</th>
+                <td>@item.id</td>
+                <td>@item.Name</td>
+                <td>@item.timeInfo.ToString("yyyy/MM/dd HH:mm:ss")</td>
             </tr>
-        </thead>
-    </table>
-</list>
+        }
+    </tbody>
+</table>
 <div>@putResult</div>
 
 @code {
     // スネークケースは、基本的にreadonlyプロパティにする
-    private List<ViewModels?> viewModels { get; set; } = new List<ViewModels?>();
+    private List<ViewModels> viewModels { get; set; } = new List<ViewModels>();
     private string putResult { get; set; } = string.Empty;
 
     private async Task Publish()
     {
-        var settingUri = Configuration.GetValue<ViewModels>("Api:Handler");
+        var settingUri = Configuration.GetValue<string>("Api:Handler");
         using var client = new HttpClient();
         try
         {
@@ -38,6 +39,7 @@
                 Name = "TestName",
                 timeInfo = DateTime.Now,
             };
+            viewModels.Add(eventModel);
 
             client.Timeout = TimeSpan.FromSeconds(5);
             var url = $"{settingUri}/reserve";
