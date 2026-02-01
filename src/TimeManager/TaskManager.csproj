@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\StudyManager\Communication\Communication.csproj" />
     <ProjectReference Include="..\StudyManager\StudyManager.ServiceDefaults\StudyManager.ServiceDefaults.csproj" />
   </ItemGroup>
 

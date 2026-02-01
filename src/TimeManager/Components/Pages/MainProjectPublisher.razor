@@ -1,6 +1,9 @@
 ﻿@page "/MainProject"
 @using Microsoft.Extensions.Hosting
+@using Communication.Services
+@using Communication.Services.Models
 @inject IConfiguration Configuration
+@inject HttpClientRest httpClientRest
 @rendermode InteractiveServer
 
 <h3>MainProject</h3>
@@ -18,9 +21,9 @@
         @foreach (var item in viewModels)
         {
             <tr>
-                <td>@item.id</td>
+                <td>@item.Id</td>
                 <td>@item.Name</td>
-                <td>@item.timeInfo.ToString("yyyy/MM/dd HH:mm:ss")</td>
+                <td>@item.TimeInfo.ToString("yyyy/MM/dd HH:mm:ss")</td>
             </tr>
         }
     </tbody>
@@ -29,7 +32,7 @@
 
 @code {
     // スネークケースは、基本的にreadonlyプロパティにする
-    private List<ViewModels> viewModels { get; set; } = new List<ViewModels>();
+    private List<MainProjectDto> viewModels { get; set; } = new List<MainProjectDto>();
     private string putResult { get; set; } = string.Empty;
 
     private async Task Publish()
@@ -38,26 +41,18 @@
         using var client = new HttpClient();
         try
         {
-            var eventModel = new ViewModels
+            var eventModel = new MainProjectDto
             {
-                id = Guid.NewGuid().ToString(),
+                Id = Guid.NewGuid().ToString(),
                 Name = "TestName",
-                timeInfo = DateTime.Now,
+                TimeInfo = DateTime.Now,
             };
             viewModels.Add(eventModel);
 
             client.Timeout = TimeSpan.FromSeconds(5);
-            var url = $"{settingUri}/reserve";
-            var response = await client.PutAsJsonAsync(url, eventModel);
+            await httpClientRest.UpdateMainProjectAsync(eventModel);
 
-            if (response.StatusCode == System.Net.HttpStatusCode.OK)
-            {
                 putResult = "Put成功";
-            }
-            else
-            {
-                putResult = "Put失敗";
-            }
         }
         // 本当はExceptionでうけないでもっと下の例外クラスで受ける必要がある。
         catch (Exception ex)
@@ -68,11 +63,4 @@
         }
     }
 
-    public class ViewModels
-    {
-        // 汎用的にする場合のみ
-        public string id { get; set; } = Guid.NewGuid().ToString();
-        public string Name { get; set; } = string.Empty;
-        public DateTime timeInfo { get; set; } = DateTime.MinValue;
-    }
 }

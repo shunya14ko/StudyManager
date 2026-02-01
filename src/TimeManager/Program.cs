@@ -1,6 +1,7 @@
 using TaskManager.Components;
 using Microsoft.FluentUI.AspNetCore.Components;
 using StudyManager.ServiceDefaults;
+using Communication.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +12,7 @@ builder.Services.AddRazorComponents()
 builder.Services.AddServiceDiscovery();
 builder.Services.AddHttpClient();
 builder.Services.AddFluentUIComponents();
+builder.Services.AddHttpClient<HttpClientRest>();
 
 var app = builder.Build();
 
