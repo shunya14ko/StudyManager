@@ -1,5 +1,5 @@
 <Solution>
-  <Project Path="../TimeManager/TimeManager.csproj" />
+  <Project Path="../TimeManager/TaskManager.csproj" />
   <Project Path="StudyManager.ApiService/StudyManager.ApiService.csproj" />
   <Project Path="StudyManager.AppHost/StudyManager.AppHost.csproj" />
   <Project Path="StudyManager.ServiceDefaults/StudyManager.ServiceDefaults.csproj" />
