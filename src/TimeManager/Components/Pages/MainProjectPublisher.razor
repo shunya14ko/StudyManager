@@ -3,6 +3,7 @@
 @using Communication.Services
 @using Communication.Services.Models
 @inject IConfiguration Configuration
+@inject IToastService toastService
 @inject HttpClientRest httpClientRest
 @rendermode InteractiveServer
 
@@ -52,13 +53,14 @@
             client.Timeout = TimeSpan.FromSeconds(5);
             await httpClientRest.UpdateMainProjectAsync(eventModel);
 
-                putResult = "Put成功";
+            putResult = "Put成功";
+            toastService.ShowToast(ToastIntent.Success, "Put成功");
         }
         // 本当はExceptionでうけないでもっと下の例外クラスで受ける必要がある。
         catch (Exception ex)
         {
             putResult = "Put失敗";
-            Console.WriteLine(ex.Message);
+            toastService.ShowToast(ToastIntent.Warning, ex.Message);
             //toast.service.ShowError("取得に失敗しました");
         }
     }

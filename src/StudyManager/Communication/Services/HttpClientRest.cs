@@ -7,7 +7,7 @@ namespace Communication.Services;
 public class HttpClientRest(HttpClient client)
 {
     private readonly HttpClient _httpClient = client;
-    private static readonly string projectMainUri = "http://localhost:5215/mainProject";
+    private static readonly string projectMainUri = "http://localhost:5327/api/v1/mainProject";
 
     public async Task UpdateMainProjectAsync(MainProjectDto model)
     {
@@ -16,9 +16,9 @@ public class HttpClientRest(HttpClient client)
             var response = await _httpClient.PutAsJsonAsync(projectMainUri, model);
             response.EnsureSuccessStatusCode();
         }
-        catch
+        catch(Exception ex)
         {
-            throw new TransferRestException();
+            throw new TransferRestException(ex.Message);
         }
     }
 }
