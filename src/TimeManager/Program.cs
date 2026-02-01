@@ -1,23 +1,20 @@
-using TimeManager.Components;
+using Microsoft.FluentUI.AspNetCore.Components;
 using StudyManager.ServiceDefaults;
+using TimeManager.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
-
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
-
 builder.Services.AddServiceDiscovery();
-
-#warning ToDo(è¨ó—) // HttpClientÇÃê›íËÇí«â¡
-#warning ToDo(è¨ó—) // FuluentUIÇÃê›íËÇí«â¡
+builder.Services.AddHttpClient();
+builder.Services.AddFluentUIComponents();
 
 var app = builder.Build();
 
 app.MapDefaultEndpoints();
-
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
@@ -27,9 +24,7 @@ if (!app.Environment.IsDevelopment())
 }
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
-
 app.UseAntiforgery();
-
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
