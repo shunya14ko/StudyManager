@@ -4,5 +4,4 @@
   <Project Path="StudyManager.AppHost/StudyManager.AppHost.csproj" />
   <Project Path="StudyManager.ServiceDefaults/StudyManager.ServiceDefaults.csproj" />
   <Project Path="StudyManager.Tests/StudyManager.Tests.csproj" />
-  <Project Path="StudyManager.Web/StudyManager.Web.csproj" />
 </Solution>
