@@ -5,14 +5,14 @@ namespace StudyManager.ApiService.Controller
 {
     [Route("api/v1/[controller]")]
     [ApiController]
-    public class ReserveController : ControllerBase
+    public class MainProjectController : ControllerBase
     {
         // メモリ上の簡易ストア（実際はDB等へ保存してください）
-        private static readonly List<ProjectModel> projects = [];
+        private static readonly List<MainProjectDto> projects = [];
 
         // JSON を PUT で受け取り ProjectModel を作成（または更新）
         [HttpPut]
-        public IActionResult CreateOrUpdate([FromBody] ProjectModel model)
+        public IActionResult CreateOrUpdate([FromBody] MainProjectDto model)
         {
             // 既存なら更新（簡易実装）
             var existing = projects.FirstOrDefault(p => p.ProjectId == model.ProjectId);

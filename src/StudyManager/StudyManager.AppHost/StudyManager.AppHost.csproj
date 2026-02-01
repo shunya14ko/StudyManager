@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\TimeManager\TimeManager.csproj" />
+    <ProjectReference Include="..\..\TimeManager\TaskManager.csproj" />
     <ProjectReference Include="..\StudyManager.ApiService\StudyManager.ApiService.csproj" />
   </ItemGroup>
 
