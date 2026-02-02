@@ -1,7 +1,8 @@
 <Solution>
   <Project Path="../TimeManager/TaskManager.csproj" />
+  <Project Path="Communication/Communication.csproj" Id="07216458-b8f9-4ef9-8890-6c9ed18c7dbb" />
   <Project Path="StudyManager.ApiService/StudyManager.ApiService.csproj" />
   <Project Path="StudyManager.AppHost/StudyManager.AppHost.csproj" />
   <Project Path="StudyManager.ServiceDefaults/StudyManager.ServiceDefaults.csproj" />
-  <Project Path="StudyManager.Tests/StudyManager.Tests.csproj" />
+  <Project Path="StudyManager.Tests/TaskManager.Tests.csproj" />
 </Solution>
