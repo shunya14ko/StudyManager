@@ -2,19 +2,37 @@
 @using Microsoft.Extensions.Hosting
 @using Communication.Services
 @using Communication.Services.Models
+@using System.ComponentModel.DataAnnotations
 @inject IConfiguration Configuration
 @inject IToastService toastService
 @inject HttpClientRest httpClientRest
-@rendermode InteractiveServer
 
 <h3>MainProject</h3>
 @* Fluent UIを触ってみる UIのコンポーネントで値を入力してPutするまでの実現をする *@
 
 <button class="btn btn-primary" @onclick="Publish">Primary Button</button>
 
-<FluentCard Width="350px" Height="250px">
-    <h2>Hello World!</h2>
-    <FluentButton Appearance="@Appearance.Accent">Click Me</FluentButton>
+<FluentCard Width="350px" Height="500px">
+    <FluentEditForm EditContext=@editContext  OnValidSubmit=@PutTestData>
+        <DataAnnotationsValidator />
+
+        <FluentStack Orientation="Orientation.Vertical">
+            <div>
+                <FluentTextField @bind-Value="formModel.ProjectId" Immediate="true" @oninput="@(() => StateHasChanged())" Label="ID" Required="true"/>
+                <FluentValidationMessage For="@(() => formModel.ProjectId)" />
+            </div>
+
+            <div>
+                <FluentTextField @bind-Value="formModel.ProjectName" Label="Name" />
+            </div>
+
+            <div>
+                <FluentTextField @bind-Value="formModel.ProjectTestInfo" Label="ImageString" />
+            </div>
+
+            <FluentButton Type="ButtonType.Submit" Appearance="@Appearance.Accent" Disabled="@(!_isValid)">送信</FluentButton>
+        </FluentStack>
+    </FluentEditForm>
 </FluentCard>
 
 <table class="table">
@@ -24,7 +42,7 @@
             <tr>
                 <td>@item.Id</td>
                 <td>@item.Name</td>
-                <td>@item.TimeInfo.ToString("yyyy/MM/dd HH:mm:ss")</td>
+                <td>@item.TestInfo</td>
             </tr>
         }
     </tbody>
@@ -33,24 +51,76 @@
 
 @code {
     // スネークケースは、基本的にreadonlyプロパティにする
-    private List<MainProjectDto> viewModels { get; set; } = new List<MainProjectDto>();
-    private string putResult { get; set; } = string.Empty;
+    private ProjectFormModel formModel = new();
+    private List<MainProjectDto> viewModels = new();
+    private string putResult = string.Empty;
+    private EditContext editContext = default!;
+    private bool _isValid = false; // 初期状態は無効
 
+    // バリデーション用のクラス
+    public class ProjectFormModel
+    {
+        [Required(ErrorMessage = "IDは必須入力です")]
+        public string ProjectId { get; set; } = string.Empty;
+
+        public string ProjectName { get; set; } = string.Empty;
+
+        public string ProjectTestInfo { get; set; } = string.Empty;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // 初期化処理があればここに記述
+        editContext = new EditContext(formModel);
+
+        // フィールドの値が変更されたら実行されるイベント
+        editContext.OnFieldChanged += (sender, eventArgs) =>
+        {
+            // Validate() を呼ぶと画面にエラーメッセージが表示され、結果が返る
+            _isValid = editContext.Validate();
+
+            // 状態が変わったことを Blazor に通知して再描画
+            StateHasChanged();
+        };
+    }
+
+    private async Task PutTestData()
+    {
+        try
+        {
+            var eventModel = new MainProjectDto
+            {
+                Id = formModel.ProjectId,
+                Name = formModel.ProjectName,
+                TestInfo = formModel.ProjectTestInfo,
+            };
+
+            viewModels.Add(eventModel);
+            await httpClientRest.UpdateMainProjectAsync(eventModel);
+
+            toastService.ShowToast(ToastIntent.Success, "保存しました");
+        }
+        catch (Exception ex)
+        {
+            putResult = "Put失敗";
+            toastService.ShowToast(ToastIntent.Error, $"エラー: {ex.Message}");
+        }
+    }
+
+    // Publishメソッドも同様に formModel を使うように修正...
     private async Task Publish()
     {
         var settingUri = Configuration.GetValue<string>("Api:Handler");
-        using var client = new HttpClient();
         try
         {
             var eventModel = new MainProjectDto
             {
                 Id = Guid.NewGuid().ToString(),
                 Name = "TestName",
-                TimeInfo = DateTime.Now,
+                TestInfo = "Test"
             };
             viewModels.Add(eventModel);
 
-            client.Timeout = TimeSpan.FromSeconds(5);
             await httpClientRest.UpdateMainProjectAsync(eventModel);
 
             putResult = "Put成功";
@@ -61,8 +131,6 @@
         {
             putResult = "Put失敗";
             toastService.ShowToast(ToastIntent.Warning, ex.Message);
-            //toast.service.ShowError("取得に失敗しました");
         }
     }
-
 }

@@ -16,7 +16,6 @@ namespace StudyManager.ApiService.Controller
             var existing = projects.FirstOrDefault(p => p.ProjectId == model.ProjectId);
             if (existing == null)
             {
-                model.CreatedAt = DateTime.UtcNow;
                 projects.Add(model);
                 return Ok();
             }
