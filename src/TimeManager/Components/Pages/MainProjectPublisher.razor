@@ -5,10 +5,11 @@
 @using System.ComponentModel.DataAnnotations
 @using Icons = Microsoft.FluentUI.AspNetCore.Components.Icons
 @using TaskManager.Validations.Attributes
-@inject IConfiguration Configuration
-@inject IToastService toastService
-@inject HttpClientRest httpClientRest
+@using TaskManager.Validations.Services
+@inject EditContextPipeline _pipeline
+@inject IToastService _toastService
 @inject IDialogService _dialogService
+@inject HttpClientRest _httpClientRest
 
 <h3>MainProject</h3>
 @* Fluent UIを触ってみる UIのコンポーネントで値を入力してPutするまでの実現をする *@
@@ -16,6 +17,7 @@
 <FluentCard Width="Flex">
     <FluentEditForm EditContext=@editContext OnValidSubmit=@PutTestData>
         <DataAnnotationsValidator />
+        <EditContextPipeline />
 
         <FluentStack Orientation="Orientation.Vertical">
             <div>
@@ -101,18 +103,26 @@
                 TestInfo = formModel.ProjectTestInfo,
             };
 
-            var sss = await OpenDialog();
-            if (!sss.Cancelled)
+            var hasWarning = _pipeline.HasWarnings(formModel);
+
+            if (hasWarning)
             {
-                viewModels.Add(eventModel);
-                await httpClientRest.UpdateMainProjectAsync(eventModel);
-                toastService.ShowToast(ToastIntent.Success, "保存しました");
+                var confirm = await OpenDialog();
+                if (!confirm.Cancelled)
+                {
+                    viewModels.Add(eventModel);
+                    await _httpClientRest.UpdateMainProjectAsync(eventModel);
+                    _toastService.ShowToast(ToastIntent.Success, "保存しました");
+                }
             }
+            viewModels.Add(eventModel);
+            await _httpClientRest.UpdateMainProjectAsync(eventModel);
+            _toastService.ShowToast(ToastIntent.Success, "保存しました");
         }
         catch (Exception ex)
         {
             putResult = "Put失敗";
-            toastService.ShowToast(ToastIntent.Error, $"エラー: {ex.Message}");
+            _toastService.ShowToast(ToastIntent.Error, $"エラー: {ex.Message}");
         }
     }
 

@@ -1,7 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using TaskManager.Validations.Abstract;
 
-namespace TaskManager.Validations.Attributes;
+namespace TaskManager.Validations.Common;
 
 public class WrapperResult(string errorMessage, ImportanceRating warningLevell) : ValidationResult(errorMessage)
 {

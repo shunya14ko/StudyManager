@@ -1,5 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using TaskManager.Validations.Abstract;
+using TaskManager.Validations.Common;
 
 namespace TaskManager.Validations.Attributes;
 
@@ -8,7 +8,6 @@ public class ThresholdAttribute(int threshold, string errorMessage) : Validation
     [Required]
     public int Threshold { get; set; } = threshold;
 
-    // これ宣言側で上手く制御できるかもしれない？　ただ、Nullチェックが入るのであった方がいいかも？？
     [Required]
     public string UserErrorMessage { get; set; } = errorMessage;
 
@@ -18,7 +17,7 @@ public class ThresholdAttribute(int threshold, string errorMessage) : Validation
         {
             if (intValue < Threshold)
             {
-                return new WrapperResult(UserErrorMessage, ImportanceRating.warning);
+                return new WrapperResult(UserErrorMessage, ImportanceRating.Warning);
             }
         }
         return ValidationResult.Success;
