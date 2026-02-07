@@ -17,7 +17,7 @@ public class ThresholdAttribute(int threshold, string errorMessage) : Validation
         {
             if (intValue < Threshold)
             {
-                return new WrapperResult(UserErrorMessage, ImportanceRating.Warning);
+                return new ExtendedValidationResult(UserErrorMessage, ImportanceRating.Warning);
             }
         }
         return ValidationResult.Success;

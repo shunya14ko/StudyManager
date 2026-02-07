@@ -10,9 +10,9 @@ using TaskManager.Validations.Common;
 
 public class EditContextPipeline : ComponentBase
 {
+    // 現在の EditContext を取得
     [CascadingParameter]
     private EditContext CurrentEditContext { get; set; } = default!;
-
     private ValidationMessageStore _messageStore = default!;
 
     protected override void OnInitialized()
@@ -37,6 +37,12 @@ public class EditContextPipeline : ComponentBase
         // editContext.Validate() 自体の戻り値（True/False）には影響を与えません。
     }
 
+    private void ValidateAllWarnings()
+    {
+        _messageStore.Clear();
+        // モデル全体の警告をスキャン
+    }
+
     public bool HasWarnings(object model)
     {
         var context = new ValidationContext(model);
@@ -47,12 +53,20 @@ public class EditContextPipeline : ComponentBase
 
         // ここで「Warningレベルのものがあるか」を判定
         // ※Attribute側で「警告だけど ValidationResult を返す」ように一時的に変えて判定するロジックなど
-        return results.OfType<WrapperResult>().Any(r => r.WarningLevel == ImportanceRating.Warning);
+        return results.OfType<ExtendedValidationResult>().Any(r => r.WarningLevel == ImportanceRating.Warning);
     }
 
-    private void ValidateAllWarnings()
+
+    /// <summary>
+    /// ここの使い方については要検討
+    /// </summary>
+    private void OnDispose()
     {
-        _messageStore.Clear();
-        // モデル全体の警告をスキャン
+        _messageStore.Clear(); 
+    }
+
+    private void Dispose()
+    {
+        OnDispose();
     }
 }
