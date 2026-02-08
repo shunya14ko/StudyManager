@@ -1,5 +1,60 @@
-﻿<h3>WarningMessage</h3>
+﻿@using System.Linq.Expressions
+@using Microsoft.AspNetCore.Components.Forms
+@using TaskManager.Validations.Services
+@inject WarningMessageStore WarningStore
+@implements IDisposable
+
+@if (_messages.Any())
+{
+    <div class="validation-message-warning">
+        @foreach (var message in _messages)
+        {
+            <div class="d-flex align-items-center">
+                <span class="me-1">⚠️</span> @message
+            </div>
+        }
+    </div>
+}
 
 @code {
+    // 例: For="@(() => model.Title)"と利用できるようにするため、Forと命名
+    [Parameter]
+    public Expression<Func<object>>? For { get; set; }
 
+    private FieldIdentifier _fieldIdentifier;
+    private IEnumerable<string> _messages = Enumerable.Empty<string>();
+
+    protected override void OnInitialized()
+    {
+        if (For == null)
+        {
+            throw new InvalidOperationException($"{nameof(WarningMessage)} requires a 'For' parameter.");
+        }
+
+        // 式からフィールド識別子（Modelとプロパティ名のペア）を作成
+        _fieldIdentifier = FieldIdentifier.Create(For);
+
+        // ストアの変更イベントを購読
+        WarningStore.OnWarningStateChanged += HandleWarningStateChanged;
+
+        // 初期状態を取得
+        UpdateMessages();
+    }
+
+    private void HandleWarningStateChanged()
+    {
+        UpdateMessages();
+        StateHasChanged();
+    }
+
+    // ストアからフィールドのメッセージを取りに行く
+    private void UpdateMessages()
+    {
+        _messages = WarningStore.Get(_fieldIdentifier);
+    }
+
+    public void Dispose()
+    {
+        WarningStore.OnWarningStateChanged -= HandleWarningStateChanged;
+    }
 }
