@@ -1,12 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using TaskManager.Validations.Common;
-
-namespace TaskManager.Validations.Services;
-
-// Validations/Services/EditContextPipeline.cs
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
-using TaskManager.Validations.Common;
+
+namespace TaskManager.Validations.Services;
 
 public class EditContextPipeline : ComponentBase
 {
@@ -22,51 +19,44 @@ public class EditContextPipeline : ComponentBase
         _messageStore = new ValidationMessageStore(CurrentEditContext);
 
         // フィールド変更時に警告を再計算するイベントを購読
-        CurrentEditContext.OnFieldChanged += (s, e) => ValidateWarning(e.FieldIdentifier);
-        CurrentEditContext.OnValidationRequested += (s, e) => ValidateAllWarnings();
+        CurrentEditContext.OnFieldChanged += (s, e) => HandleValidation(e.FieldIdentifier);
     }
-
-    private void ValidateWarning(FieldIdentifier fieldIdentifier)
+     
+    private void HandleValidation(FieldIdentifier fieldIdentifier)
     {
         _messageStore.Clear(fieldIdentifier);
 
-        // リフレクション等でモデルから属性を取得し、警告をチェック
-        // 警告がある場合のみ _messageStore.Add(fieldIdentifier, "警告メッセージ") を実行
+        var propertyInfo = fieldIdentifier.Model.GetType().GetProperty(fieldIdentifier.FieldName);
+        var value = propertyInfo?.GetValue(fieldIdentifier.Model);
+        var validationContext = new ValidationContext(fieldIdentifier.Model) { MemberName = fieldIdentifier.FieldName };
+        var results = new List<ValidationResult>();
 
-        // ポイント：ここで ValidationResult は返さないため、
-        // editContext.Validate() 自体の戻り値（True/False）には影響を与えません。
-    }
+        Validator.TryValidateProperty(value, validationContext, results);
 
-    private void ValidateAllWarnings()
-    {
-        _messageStore.Clear();
-        // モデル全体の警告をスキャン
+        foreach (var result in results)
+        {
+            if (result is ExtendedValidationResult ext && ext.WarningLevel == ImportanceRating.Warning)
+            {
+                _messageStore.Add(fieldIdentifier, result.ErrorMessage!);
+            }
+        }
+
+        CurrentEditContext.NotifyValidationStateChanged();
     }
 
     public bool HasWarnings(object model)
     {
-        var context = new ValidationContext(model);
         var results = new List<ValidationResult>();
+        Validator.TryValidateObject(model, new ValidationContext(model), results, true);
 
-        // 全プロパティのバリデーションを実行
-        Validator.TryValidateObject(model, context, results, true);
-
-        // ここで「Warningレベルのものがあるか」を判定
-        // ※Attribute側で「警告だけど ValidationResult を返す」ように一時的に変えて判定するロジックなど
         return results.OfType<ExtendedValidationResult>().Any(r => r.WarningLevel == ImportanceRating.Warning);
     }
 
-
-    /// <summary>
-    /// ここの使い方については要検討
-    /// </summary>
-    private void OnDispose()
+    public bool HasFatalErrors(object model)
     {
-        _messageStore.Clear(); 
-    }
+        var results = new List<ValidationResult>();
+        Validator.TryValidateObject(model, new ValidationContext(model), results, true);
 
-    private void Dispose()
-    {
-        OnDispose();
+        return results.OfType<ExtendedValidationResult>().Any(r => r.WarningLevel != ImportanceRating.Warning);
     }
 }

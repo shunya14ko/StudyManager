@@ -32,7 +32,7 @@
                 <FluentNumberField @bind-Value="formModel.ProjectTestInfo" Label="WarningTestNum" Min="1" Max="50" />
                 <FluentValidationMessage For="@(() => formModel.ProjectTestInfo)" />
             </div>
-            <FluentButton Type="ButtonType.Submit" Appearance="@Appearance.Accent" Disabled=@(!UserFieldErrorFlag)>送信</FluentButton>
+            <FluentButton Type="ButtonType.Submit" Appearance="@Appearance.Accent" Disabled=@UserFieldErrorFlag>送信</FluentButton>
         </FluentStack>
     </FluentEditForm>
 </FluentCard>
@@ -115,9 +115,12 @@
                     _toastService.ShowToast(ToastIntent.Success, "保存しました");
                 }
             }
-            viewModels.Add(eventModel);
-            await _httpClientRest.UpdateMainProjectAsync(eventModel);
-            _toastService.ShowToast(ToastIntent.Success, "保存しました");
+            else
+            {
+                viewModels.Add(eventModel);
+                await _httpClientRest.UpdateMainProjectAsync(eventModel);
+                _toastService.ShowToast(ToastIntent.Success, "保存しました");
+            }
         }
         catch (Exception ex)
         {
