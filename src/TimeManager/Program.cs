@@ -1,7 +1,8 @@
-using TaskManager.Components;
+using Communication.Services;
 using Microsoft.FluentUI.AspNetCore.Components;
 using StudyManager.ServiceDefaults;
-using Communication.Services;
+using TaskManager.Components;
+using TaskManager.Validations.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +14,8 @@ builder.Services.AddServiceDiscovery();
 builder.Services.AddHttpClient();
 builder.Services.AddFluentUIComponents();
 builder.Services.AddHttpClient<HttpClientRest>();
+
+builder.Services.AddScoped<WarningMessageStore>();
 
 var app = builder.Build();
 

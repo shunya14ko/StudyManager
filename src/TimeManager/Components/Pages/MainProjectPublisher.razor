@@ -4,34 +4,34 @@
 @using Communication.Services.Models
 @using System.ComponentModel.DataAnnotations
 @using Icons = Microsoft.FluentUI.AspNetCore.Components.Icons
-@inject IConfiguration Configuration
-@inject IToastService toastService
-@inject HttpClientRest httpClientRest
+@using TaskManager.Validations.Attributes
+@using TaskManager.Validations.Services
+@inject IToastService _toastService
 @inject IDialogService _dialogService
+@inject HttpClientRest _httpClientRest
+@inject WarningMessageStore WarningStore
 
 <h3>MainProject</h3>
 @* Fluent UIを触ってみる UIのコンポーネントで値を入力してPutするまでの実現をする *@
 
-<button class="btn btn-primary" @onclick="Publish">Primary Button</button>
-
-<FluentCard Width="350px" Height="500px">
+<FluentCard Width="Flex">
     <FluentEditForm EditContext=@editContext OnValidSubmit=@PutTestData>
         <DataAnnotationsValidator />
-
+        <WarningValidator />
         <FluentStack Orientation="Orientation.Vertical">
             <div>
-                <FluentTextField @bind-Value="formModel.ProjectId" Immediate="true" @oninput="@(() => StateHasChanged())" Label="ID" Required="true" />
+                <FluentTextField @bind-Value="formModel.ProjectId" Immediate="true" @oninput="@(() => StateHasChanged())" Label="ID" />
                 <FluentValidationMessage For="@(() => formModel.ProjectId)" />
             </div>
 
             <div>
                 <FluentTextField @bind-Value="formModel.ProjectName" Label="Name" />
             </div>
-
             <div>
-                <FluentTextField @bind-Value="formModel.ProjectTestInfo" Label="ImageString" />
+                <FluentNumberField @bind-Value="formModel.ProjectTestInfo" Label="WarningTestNum" Min="1" Max="50" />
+                <WarningMessage For="@(() => formModel.ProjectTestInfo)" />
             </div>
-            <FluentButton Type="ButtonType.Submit" Appearance="@Appearance.Accent" Disabled="@(!_isValid)">送信</FluentButton>
+            <FluentButton Type="ButtonType.Submit" Appearance="@Appearance.Accent">送信</FluentButton>
         </FluentStack>
     </FluentEditForm>
 </FluentCard>
@@ -53,10 +53,13 @@
 @code {
     // スネークケースは、基本的にreadonlyプロパティにする
     private ProjectFormModel formModel = new();
-    private List<MainProjectDto> viewModels = new();
-    private string putResult = string.Empty;
+    private List<MainProjectDto> viewModels = [];
     private EditContext editContext = default!;
-    private bool _isValid = false; // 初期状態は無効
+    private string putResult = string.Empty;
+
+    // 属性に渡す値は 'const' である必要があります
+    private const int ThresholdValue = 10;
+    private const string ErrorMessage = "値は10以上である必要があります";
 
     // バリデーション用のクラス
     public class ProjectFormModel
@@ -66,23 +69,15 @@
 
         public string ProjectName { get; set; } = string.Empty;
 
-        public string ProjectTestInfo { get; set; } = string.Empty;
+        // Attribute部分はクラス名のみでOKらしい・・・
+        [Threshold(ThresholdValue, ErrorMessage)]
+        public int ProjectTestInfo { get; set; } = 10;
     }
 
     protected override async Task OnInitializedAsync()
     {
-        // 初期化処理があればここに記述
         editContext = new EditContext(formModel);
-
-        // フィールドの値が変更されたら実行されるイベント
-        editContext.OnFieldChanged += (sender, eventArgs) =>
-        {
-            // Validate() を呼ぶと画面にエラーメッセージが表示され、結果が返る
-            _isValid = editContext.Validate();
-
-            // 状態が変わったことを Blazor に通知して再描画
-            StateHasChanged();
-        };
+        StateHasChanged();
     }
 
     private async Task PutTestData()
@@ -96,45 +91,27 @@
                 TestInfo = formModel.ProjectTestInfo,
             };
 
-            var sss = await OpenDialog();
-            if (!sss.Cancelled)
+            if (WarningStore.HasWarnings())
+            {
+                var confirm = await OpenDialog();
+                if (!confirm.Cancelled)
+                {
+                    viewModels.Add(eventModel);
+                    await _httpClientRest.UpdateMainProjectAsync(eventModel);
+                    _toastService.ShowToast(ToastIntent.Success, "保存しました");
+                }
+            }
+            else
             {
                 viewModels.Add(eventModel);
-                await httpClientRest.UpdateMainProjectAsync(eventModel);
-                toastService.ShowToast(ToastIntent.Success, "保存しました");
+                await _httpClientRest.UpdateMainProjectAsync(eventModel);
+                _toastService.ShowToast(ToastIntent.Success, "保存しました");
             }
         }
         catch (Exception ex)
         {
             putResult = "Put失敗";
-            toastService.ShowToast(ToastIntent.Error, $"エラー: {ex.Message}");
-        }
-    }
-
-    // Publishメソッドも同様に formModel を使うように修正...
-    private async Task Publish()
-    {
-        var settingUri = Configuration.GetValue<string>("Api:Handler");
-        try
-        {
-            var eventModel = new MainProjectDto
-            {
-                Id = Guid.NewGuid().ToString(),
-                Name = "TestName",
-                TestInfo = "Test"
-            };
-            viewModels.Add(eventModel);
-
-            await httpClientRest.UpdateMainProjectAsync(eventModel);
-
-            putResult = "Put成功";
-            toastService.ShowToast(ToastIntent.Success, "Put成功");
-        }
-        // 本当はExceptionでうけないでもっと下の例外クラスで受ける必要がある。
-        catch (Exception ex)
-        {
-            putResult = "Put失敗";
-            toastService.ShowToast(ToastIntent.Warning, ex.Message);
+            _toastService.ShowToast(ToastIntent.Error, $"エラー: {ex.Message}");
         }
     }
 
