@@ -13,13 +13,6 @@ public class ThresholdAttribute(int threshold, string errorMessage) : Validation
 
     protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
     {
-        if (value is int intValue)
-        {
-            if (intValue < Threshold)
-            {
-                return new ExtendedValidationResult(UserErrorMessage, ImportanceRating.Warning);
-            }
-        }
         return ValidationResult.Success;
     }
 }

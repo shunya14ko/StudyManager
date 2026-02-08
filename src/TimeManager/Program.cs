@@ -15,7 +15,7 @@ builder.Services.AddHttpClient();
 builder.Services.AddFluentUIComponents();
 builder.Services.AddHttpClient<HttpClientRest>();
 
-builder.Services.AddScoped<EditContextPipeline>();
+builder.Services.AddScoped<WarningMessageStore>();
 
 var app = builder.Build();
 
