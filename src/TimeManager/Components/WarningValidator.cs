@@ -15,15 +15,44 @@ public class WarningValidator : ComponentBase, IDisposable
     [Inject]
     private WarningMessageStore WarningStore { get; set; } = default!;
 
-    protected override void OnInitialized()
+    // 変更前のコンテキストを覚えておく変数
+    private EditContext? _previousEditContext;
+
+    protected override void OnParametersSet()
     {
-        if (CurrentEditContext == null)
+        // 以前のDataと今回のDataが異なる場合の処理
+        if (CurrentEditContext != _previousEditContext)
         {
-            throw new InvalidOperationException($"{nameof(WarningValidator)} requires a cascading parameter of type {nameof(EditContext)}.");
+            if (_previousEditContext != null)
+            {
+                _previousEditContext.OnFieldChanged -= HandleFieldChanged;
+                _previousEditContext.OnValidationRequested -= HandleValidationRequested;
+            }
+
+            if (CurrentEditContext != null)
+            {
+                CurrentEditContext.OnFieldChanged += HandleFieldChanged;
+                CurrentEditContext.OnValidationRequested += HandleValidationRequested;
+                ValidateAll();
+            }
+
+            _previousEditContext = CurrentEditContext;
         }
-        // フォームの入力値が変更された時 ＆ 送信ボタンなどで検証がリクエストされた時
-        CurrentEditContext.OnFieldChanged += HandleFieldChanged;
-        CurrentEditContext.OnValidationRequested += HandleValidationRequested;
+    }
+
+    // 初期レンダリング時のバリデータ
+    internal void ValidateAll()
+    {
+        WarningStore.ClearAll();
+
+        var model = CurrentEditContext.Model;
+        var properties = model.GetType().GetProperties();
+
+        // 全プロパティを走査して検証
+        foreach (var property in properties)
+        {
+            ValidateProperty(model, property);
+        }
     }
 
     private void HandleFieldChanged(object? sender, FieldChangedEventArgs eventArgs)
