@@ -2,13 +2,10 @@
 
 public class LogsModel
 {
-    // Lokiが付与するタイムスタンプ用
     public DateTime Timestamp { get; set; }
-
-    // 以下、PythonスクリプトのJSONの中身
-    public string Level { get; set; } = "";
-    public string Endpoint { get; set; } = "";
+    public string Level { get; set; } = string.Empty;
+    public string Endpoint { get; set; } = string.Empty;
     public int Status { get; set; }
-    public string Message { get; set; } = "";
+    public string Message { get; set; } = string.Empty;
     public int DurationMs { get; set; }
 }

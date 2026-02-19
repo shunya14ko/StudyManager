@@ -9,7 +9,7 @@
 
 <div>
     <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
-        <h3>SYSTEM_MONITOR</h3>
+        <h3>Log Monitor</h3>
         <FluentSpacer />
         <FluentBadge Appearance="Appearance.Neutral">
             TOTAL LOGS: @Logs.Count
@@ -26,14 +26,14 @@
         </FluentButton>
     </FluentStack>
 
-    <div style="overflow-y: scroll; flex-grow: 1;">
-        <FluentDataGrid Items="@Logs.AsQueryable()" ResizableColumns="true" Style="width: 100%;">
-            <PropertyColumn Property="@(p => p.Timestamp)" Title="TIME" Format="HH:mm:ss.fff" Sortable="true" />
-            <TemplateColumn Title="LEVEL" Sortable="true" />
-            <PropertyColumn Property="@(p => p.Endpoint)" Title="ENDPOINT" />
-            <TemplateColumn Title="STATUS" Sortable="true" />
-            <PropertyColumn Property="@(p => p.DurationMs)" Title="LATENCY(ms)" Sortable="true" />
-            <PropertyColumn Property="@(p => p.Message)" Title="MESSAGE" />
+    <div style="overflow-y: scroll; flex-grow: 1; max-height: 800px">
+        <FluentDataGrid Items=@Logs.AsQueryable() ResizableColumns=@true Style="width: 100%;">
+            <PropertyColumn Property=@(p => p.Timestamp) Title="TIME" Format="HH:mm:ss.fff" />
+            <TemplateColumn Title="LEVEL" />
+            <PropertyColumn Property=@(p => p.Endpoint) Title="ENDPOINT" />
+            <TemplateColumn Title="STATUS" />
+            <PropertyColumn Property=@(p => p.DurationMs) Title="LATENCY(ms)" />
+            <PropertyColumn Property=@(p => p.Message) Title="MESSAGE" />
         </FluentDataGrid>
     </div>
 </div>
@@ -47,20 +47,37 @@
     // polling process is services, so that it can be shared by multiple components if needed.
     private async Task Connect()
     {
+        if (isPolling) return;
+
+        isPolling = true;
+
         // initial processing
-        var cts = new CancellationTokenSource();
+        cts = new CancellationTokenSource();
 
         // Initial Move
         var progress = new Progress<LogsModel>(log =>
         {
             Logs.Add(log);
+            StateHasChanged();
         });
 
         // Start Polling
-        await _pollingManager.StartPolling(progress, cts.Token);
+        try
+        {
+            await _pollingManager.StartPolling(progress, cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            // Handle cancellation if needed
+        }
+        finally
+        {
+            isPolling = false;
+            StateHasChanged();
+        }
     }
 
-    private async Task DisConnect()
+    private void DisConnect()
     {
         cts?.Cancel();
     }
