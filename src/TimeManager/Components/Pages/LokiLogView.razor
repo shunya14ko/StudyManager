@@ -1,0 +1,90 @@
+﻿@page "/LogView"
+@using System.Text.Json
+@using System.Threading
+@using TaskManager.LokiData
+@using TaskManager.Services
+@inject HttpClient _httpClient
+@inject PollingManager _pollingManager
+@implements IDisposable
+
+<div>
+    <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
+        <h3>Log Monitor</h3>
+        <FluentSpacer />
+        <FluentBadge Appearance="Appearance.Neutral">
+            TOTAL LOGS: @Logs.Count
+        </FluentBadge>
+        <FluentBadge Appearance="Appearance.Neutral">
+            LATEST: @(Logs.FirstOrDefault()?.Timestamp.ToString("HH:mm:ss") ?? "--:--:--")
+        </FluentBadge>
+        <FluentDivider Orientation="Orientation.Vertical" Role="DividerRole.Presentation" />
+        <FluentButton Appearance="Appearance.Accent" OnClick=@Connect Disabled=@isPolling>
+            ▶ START
+        </FluentButton>
+        <FluentButton Appearance="Appearance.Outline" OnClick=@DisConnect Disabled=@(!isPolling)>
+            ■ STOP
+        </FluentButton>
+    </FluentStack>
+
+    <div style="overflow-y: scroll; flex-grow: 1; max-height: 800px">
+        <FluentDataGrid Items=@Logs.AsQueryable() ResizableColumns=@true Style="width: 100%;">
+            <PropertyColumn Property=@(p => p.Timestamp) Title="TIME" Format="HH:mm:ss.fff" />
+            <TemplateColumn Title="LEVEL" />
+            <PropertyColumn Property=@(p => p.Endpoint) Title="ENDPOINT" />
+            <TemplateColumn Title="STATUS" />
+            <PropertyColumn Property=@(p => p.DurationMs) Title="LATENCY(ms)" />
+            <PropertyColumn Property=@(p => p.Message) Title="MESSAGE" />
+        </FluentDataGrid>
+    </div>
+</div>
+
+@code {
+    private bool isPolling = false;
+    private CancellationTokenSource? cts;
+
+    private List<LogsModel> Logs { get; } = [];
+
+    // polling process is services, so that it can be shared by multiple components if needed.
+    private async Task Connect()
+    {
+        if (isPolling) return;
+
+        isPolling = true;
+
+        // initial processing
+        cts = new CancellationTokenSource();
+
+        // Initial Move
+        var progress = new Progress<LogsModel>(log =>
+        {
+            Logs.Add(log);
+            StateHasChanged();
+        });
+
+        // Start Polling
+        try
+        {
+            await _pollingManager.StartPolling(progress, cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            // Handle cancellation if needed
+        }
+        finally
+        {
+            isPolling = false;
+            StateHasChanged();
+        }
+    }
+
+    private void DisConnect()
+    {
+        cts?.Cancel();
+    }
+
+    public void Dispose()
+    {
+        cts?.Cancel();
+        cts?.Dispose();
+    }
+}

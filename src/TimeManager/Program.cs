@@ -3,6 +3,8 @@ using Microsoft.FluentUI.AspNetCore.Components;
 using StudyManager.ServiceDefaults;
 using TaskManager.Components;
 using TaskManager.Validations.Services;
+using Communication.Services;
+using TaskManager.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +16,7 @@ builder.Services.AddServiceDiscovery();
 builder.Services.AddHttpClient();
 builder.Services.AddFluentUIComponents();
 builder.Services.AddHttpClient<HttpClientRest>();
+builder.Services.AddSingleton<PollingManager>();
 
 builder.Services.AddScoped<WarningMessageStore>();
 
