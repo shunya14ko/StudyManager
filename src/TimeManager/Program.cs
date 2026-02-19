@@ -2,6 +2,7 @@ using TaskManager.Components;
 using Microsoft.FluentUI.AspNetCore.Components;
 using StudyManager.ServiceDefaults;
 using Communication.Services;
+using TaskManager.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +14,7 @@ builder.Services.AddServiceDiscovery();
 builder.Services.AddHttpClient();
 builder.Services.AddFluentUIComponents();
 builder.Services.AddHttpClient<HttpClientRest>();
+builder.Services.AddSingleton<PollingManager>();
 
 var app = builder.Build();
 

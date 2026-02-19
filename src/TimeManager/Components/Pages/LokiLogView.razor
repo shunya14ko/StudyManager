@@ -2,63 +2,36 @@
 @using System.Text.Json
 @using System.Threading
 @using TaskManager.LokiData
-@inject HttpClient Http
+@using TaskManager.Services
+@inject HttpClient _httpClient
+@inject PollingManager _pollingManager
 @implements IDisposable
 
 <div>
-    <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" Style="margin-bottom: 15px; border-bottom: 1px solid #00ff41; padding-bottom: 10px;">
-        <h3 style="margin: 0; text-shadow: 0 0 5px #00ff41;">SYSTEM_MONITOR</h3>
-
+    <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
+        <h3>SYSTEM_MONITOR</h3>
         <FluentSpacer />
-
-        <FluentBadge Appearance="Appearance.Neutral" Style="background-color: transparent; color: #00ff41; border: 1px solid #00ff41;">
-            TOTAL LOGS: @logs.Count
+        <FluentBadge Appearance="Appearance.Neutral">
+            TOTAL LOGS: @Logs.Count
         </FluentBadge>
-
-        <FluentBadge Appearance="Appearance.Neutral" Style="background-color: transparent; color: #00ff41; border: 1px solid #00ff41;">
-            LATEST: @(logs.FirstOrDefault()?.Timestamp.ToString("HH:mm:ss") ?? "--:--:--")
+        <FluentBadge Appearance="Appearance.Neutral">
+            LATEST: @(Logs.FirstOrDefault()?.Timestamp.ToString("HH:mm:ss") ?? "--:--:--")
         </FluentBadge>
-
         <FluentDivider Orientation="Orientation.Vertical" Role="DividerRole.Presentation" />
-
-        <FluentButton Appearance="Appearance.Accent" OnClick="@StartPolling" Disabled="@isPolling"
-                      Style="background-color: #006600; color: white;">
+        <FluentButton Appearance="Appearance.Accent" OnClick=@Connect Disabled=@isPolling>
             ▶ START
         </FluentButton>
-        <FluentButton Appearance="Appearance.Outline" OnClick="@StopPolling" Disabled="@(!isPolling)"
-                      Style="color: #00ff41; border-color: #006600;">
+        <FluentButton Appearance="Appearance.Outline" OnClick=@DisConnect Disabled=@(!isPolling)>
             ■ STOP
         </FluentButton>
     </FluentStack>
 
-    <div style="overflow-y: auto; flex-grow: 1;">
-        <FluentDataGrid Items="@logs.AsQueryable()" ResizableColumns="true" Style="width: 100%;">
-
+    <div style="overflow-y: scroll; flex-grow: 1;">
+        <FluentDataGrid Items="@Logs.AsQueryable()" ResizableColumns="true" Style="width: 100%;">
             <PropertyColumn Property="@(p => p.Timestamp)" Title="TIME" Format="HH:mm:ss.fff" Sortable="true" />
-
-            <TemplateColumn Title="LEVEL" Sortable="true">
-                @if (context.Level == "ERROR")
-                {
-                    <span style="color: red; font-weight: bold; text-shadow: 0 0 3px red;">[ERROR]</span>
-                }
-                else if (context.Level == "WARN")
-                {
-                    <span style="color: yellow; font-weight: bold;">[WARN]</span>
-                }
-                else
-                {
-                    <span style="color: #00ff41;">[INFO]</span>
-                }
-            </TemplateColumn>
-
+            <TemplateColumn Title="LEVEL" Sortable="true" />
             <PropertyColumn Property="@(p => p.Endpoint)" Title="ENDPOINT" />
-
-            <TemplateColumn Title="STATUS" Sortable="true">
-                <span style="font-weight: bold; color: @(context.Status >= 500 ? "red" : context.Status >= 400 ? "yellow" : "#00ff41")">
-                    @context.Status
-                </span>
-            </TemplateColumn>
-
+            <TemplateColumn Title="STATUS" Sortable="true" />
             <PropertyColumn Property="@(p => p.DurationMs)" Title="LATENCY(ms)" Sortable="true" />
             <PropertyColumn Property="@(p => p.Message)" Title="MESSAGE" />
         </FluentDataGrid>
@@ -66,84 +39,30 @@
 </div>
 
 @code {
-    private List<LogModel> logs = new();
     private bool isPolling = false;
     private CancellationTokenSource? cts;
 
-    // ページネーションを使わず、無限スクロールのような見た目にするためLimitを多めに設定
-    private readonly int MaxLogRetention = 1000;
+    private List<LogsModel> Logs { get; } = [];
 
-    private readonly JsonSerializerOptions jsonOptions = new() { PropertyNameCaseInsensitive = true };
-
-    private async Task StartPolling()
+    // polling process is services, so that it can be shared by multiple components if needed.
+    private async Task Connect()
     {
-        if (isPolling) return;
-        isPolling = true;
-        cts = new CancellationTokenSource();
+        // initial processing
+        var cts = new CancellationTokenSource();
 
-        try
+        // Initial Move
+        var progress = new Progress<LogsModel>(log =>
         {
-            while (!cts.Token.IsCancellationRequested)
-            {
-                await FetchLogsAsync();
-                await Task.Delay(2000, cts.Token); // 更新頻度(2秒)
-            }
-        }
-        catch (OperationCanceledException) { }
-        finally
-        {
-            isPolling = false;
-            StateHasChanged();
-        }
+            Logs.Add(log);
+        });
+
+        // Start Polling
+        await _pollingManager.StartPolling(progress, cts.Token);
     }
 
-    private void StopPolling() => cts?.Cancel();
-
-    private async Task FetchLogsAsync()
+    private async Task DisConnect()
     {
-        try
-        {
-            // 直近100件を取得
-            var query = "{container=\"loki-log-generator-1\"}";
-            var url = $"http://localhost:3100/loki/api/v1/query_range?query={Uri.EscapeDataString(query)}&limit=100";
-
-            var response = await Http.GetFromJsonAsync<LokiResponse>(url, cts.Token);
-
-            if (response?.Data?.Result != null)
-            {
-                var incomingLogs = new List<LogModel>();
-
-                foreach (var stream in response.Data.Result)
-                {
-                    if (stream.Values == null) continue;
-
-                    foreach (var val in stream.Values)
-                    {
-                        if (val.Count < 2) continue;
-                        try
-                        {
-                            var logItem = JsonSerializer.Deserialize<LogModel>(val[1], jsonOptions);
-                            if (logItem != null)
-                            {
-                                if (long.TryParse(val[0], out long nanoSeconds))
-                                {
-                                    logItem.Timestamp = DateTime.UnixEpoch.AddTicks(nanoSeconds / 100).ToLocalTime();
-                                }
-                                incomingLogs.Add(logItem);
-                            }
-                        }
-                        catch { /* Parse Error Ignored */ }
-                    }
-                }
-
-                logs = incomingLogs.OrderByDescending(x => x.Timestamp).ToList();
-                StateHasChanged();
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error: {ex.Message}");
-        }
+        cts?.Cancel();
     }
 
     public void Dispose()
@@ -151,8 +70,4 @@
         cts?.Cancel();
         cts?.Dispose();
     }
-
-    public class LokiResponse { public LokiData Data { get; set; } }
-    public class LokiData { public List<LokiResult> Result { get; set; } }
-    public class LokiResult { public List<List<string>> Values { get; set; } }
 }

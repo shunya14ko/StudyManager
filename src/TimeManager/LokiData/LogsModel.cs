@@ -1,6 +1,6 @@
 ﻿namespace TaskManager.LokiData;
 
-public class LogModel
+public class LogsModel
 {
     // Lokiが付与するタイムスタンプ用
     public DateTime Timestamp { get; set; }
