@@ -11,48 +11,55 @@
     <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
         <h3>Log Monitor</h3>
         <FluentSpacer />
-        <FluentBadge Appearance="Appearance.Neutral">
-            TOTAL LOGS: @Logs.Count
-        </FluentBadge>
-        <FluentBadge Appearance="Appearance.Neutral">
-            LATEST: @(Logs.FirstOrDefault()?.Timestamp.ToString("HH:mm:ss") ?? "--:--:--")
-        </FluentBadge>
         <FluentDivider Orientation="Orientation.Vertical" Role="DividerRole.Presentation" />
-        <FluentButton Appearance="Appearance.Accent" OnClick=@Connect Disabled=@isPolling>
-            ▶ START
-        </FluentButton>
-        <FluentButton Appearance="Appearance.Outline" OnClick=@DisConnect Disabled=@(!isPolling)>
-            ■ STOP
-        </FluentButton>
+        <FluentButton Appearance="Appearance.Accent" OnClick=@Connect Disabled=@_isPolling>▶ START</FluentButton>
+        <FluentButton Appearance="Appearance.Outline" OnClick=@DisConnect Disabled=@(!_isPolling)>■ STOP</FluentButton>
     </FluentStack>
 
-    <div style="overflow-y: scroll; flex-grow: 1; max-height: 800px">
-        <FluentDataGrid Items=@Logs.AsQueryable() ResizableColumns=@true Style="width: 100%;">
-            <PropertyColumn Property=@(p => p.Timestamp) Title="TIME" Format="HH:mm:ss.fff" />
-            <TemplateColumn Title="LEVEL" />
-            <PropertyColumn Property=@(p => p.Endpoint) Title="ENDPOINT" />
-            <TemplateColumn Title="STATUS" />
-            <PropertyColumn Property=@(p => p.DurationMs) Title="LATENCY(ms)" />
-            <PropertyColumn Property=@(p => p.Message) Title="MESSAGE" />
+    <div style="overflow-y: scroll; overflow-x: auto; min-height: calc(100vh - 100px); background-color: aliceblue;">
+        <FluentDataGrid Items=@Logs.AsQueryable()
+                        GenerateHeader="@GenerateHeaderOption.Sticky"
+                        DisplayMode=DataGridDisplayMode.Table
+                        Virtualize=@true
+                        ResizeType=@DataGridResizeType.Discrete
+                        ResizableColumns=true
+                        ShowHover=@true
+                        Style="min-width: 100%">
+            <PropertyColumn Property=@(p => p.Timestamp) Title="Time" Format="HH:mm:ss.fff" Width="150px" />
+            <PropertyColumn Property=@(p => p.Endpoint) Title="Endpoint" Width="150px" />
+            <PropertyColumn Property=@(p => p.DurationMs) Title="Latency(ms)" Width="200px" />
+            <PropertyColumn Property=@(p => p.Message) Title="Message" Style="min-width: 300px;">
+                <ColumnOptions>
+                    <FluentSearch @bind-Value=@_text
+                                  Placeholder="Search..."
+                                  Autofocus="true" />
+                </ColumnOptions>
+            </PropertyColumn>
+
         </FluentDataGrid>
     </div>
 </div>
 
 @code {
-    private bool isPolling = false;
-    private CancellationTokenSource? cts;
+    private bool _isPolling = false;
+    private CancellationTokenSource? _cts;
+    private string _text = string.Empty;
+    private string _searchText = string.Empty;
 
     private List<LogsModel> Logs { get; } = [];
 
     // polling process is services, so that it can be shared by multiple components if needed.
     private async Task Connect()
     {
-        if (isPolling) return;
+        if (_isPolling)
+        {
+            return;
+        }
 
-        isPolling = true;
+        _isPolling = true;
 
         // initial processing
-        cts = new CancellationTokenSource();
+        _cts = new CancellationTokenSource();
 
         // Initial Move
         var progress = new Progress<LogsModel>(log =>
@@ -64,7 +71,7 @@
         // Start Polling
         try
         {
-            await _pollingManager.StartPolling(progress, cts.Token);
+            await _pollingManager.StartPolling(progress, _cts.Token);
         }
         catch (OperationCanceledException)
         {
@@ -72,19 +79,19 @@
         }
         finally
         {
-            isPolling = false;
+            _isPolling = false;
             StateHasChanged();
         }
     }
 
     private void DisConnect()
     {
-        cts?.Cancel();
+        _cts?.Cancel();
     }
 
     public void Dispose()
     {
-        cts?.Cancel();
-        cts?.Dispose();
+        _cts?.Cancel();
+        _cts?.Dispose();
     }
 }
