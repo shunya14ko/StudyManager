@@ -3,7 +3,6 @@ using Microsoft.FluentUI.AspNetCore.Components;
 using StudyManager.ServiceDefaults;
 using TaskManager.Components;
 using TaskManager.Validations.Services;
-using Communication.Services;
 using TaskManager.Services;
 
 var builder = WebApplication.CreateBuilder(args);
